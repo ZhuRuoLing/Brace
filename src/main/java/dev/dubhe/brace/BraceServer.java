@@ -33,6 +33,7 @@ public abstract class BraceServer {
         BraceServer.eventManager = new EventManager();
         BraceServer.commands = new Commands();
         BraceServer.pluginManager = new PluginManager();
+        BraceServer.pluginManager.init();
         BraceServer.pluginManager.onInitialization();
         BraceServer.bot.onInitialization();
         BraceServer.commands.load();

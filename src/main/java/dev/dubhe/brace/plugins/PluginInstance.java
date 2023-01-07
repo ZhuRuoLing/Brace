@@ -20,19 +20,19 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
-public class PluginFile {
-    private static final Gson GSON = new Gson();
-    private static final Logger LOGGER = LogUtils.getLogger();
-    private static final PluginClassLoader classLoader = new PluginClassLoader(PluginFile.class.getClassLoader());
+public class PluginInstance {
+    protected final Map<String, Class<?>> classMap = new ConcurrentHashMap<>();
+    private final Gson GSON = new Gson();
+    private final Logger LOGGER = LogUtils.getLogger();
+    private final PluginClassLoader classLoader = PluginClassLoader.getInstance(this.getClass().getClassLoader());
     private final File file;
     private final JarFile jarFile;
     private final Plugin.PluginMeta metaData;
     private final JsonObject defaultConfig;
-    protected final Map<String, Class<?>> classMap = new ConcurrentHashMap<>();
     private final Map<String, JarEntry> entryMap = new ConcurrentHashMap<>();
     private Plugin main = null;
 
-    public PluginFile(File file) throws IOException, InvocationTargetException, NoSuchMethodException, IllegalAccessException, ClassNotFoundException, InstantiationException {
+    public PluginInstance(File file) throws IOException, InvocationTargetException, NoSuchMethodException, IllegalAccessException, InstantiationException {
         this.file = file;
         this.jarFile = new JarFile(this.file);
         this.loadJarFile();
@@ -40,8 +40,6 @@ public class PluginFile {
         this.defaultConfig = this.loadDefaultConfig();
         if (null != this.metaData) {
             this.loadClasses();
-            this.main = this.load();
-            BraceServer.getResourcesManager().load(this.file);
         }
         jarFile.close();
     }
@@ -99,21 +97,23 @@ public class PluginFile {
         }
     }
 
-    private Plugin load() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
+    void init() throws NoSuchMethodException, InvocationTargetException, InstantiationException, IllegalAccessException {
         String mainClassName = metaData.main_class;
         if (this.classMap.containsKey(mainClassName)) {
             Class<?> clazz = this.classMap.get(mainClassName);
             Object obj = clazz.getDeclaredConstructor().newInstance();
             if (obj instanceof Plugin plugin) {
                 plugin.load(metaData, defaultConfig);
-                return plugin;
+                BraceServer.getResourcesManager().load(this.file);
+                this.main = plugin;
             } else {
                 LOGGER.warn(new TranslatableComponent("brace.plugin.load.warn.main_class", metaData.id).getString());
             }
+
         } else {
             LOGGER.warn(new TranslatableComponent("brace.plugin.load.warn.dont_has_main_class", file.getName()).getString());
         }
-        return null;
+        throw new RuntimeException();//don`t know how to deal with
     }
 
     public Plugin.PluginMeta getMetaData() {
