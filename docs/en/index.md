@@ -1,6 +1,11 @@
-# [白泽](../index.md) | Brace
+# [白泽](../index) | Brace
 
 * A Universal Chat Bot API
+
+## Use
+
+* [Download Implementation]()
+* [Download Plugin]()
 
 ## Develop Plugin
 
